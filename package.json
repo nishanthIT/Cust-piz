@@ -1,0 +1,24 @@
+{
+  "name": "cust-piz",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mohithpranav/Cust-piz.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/mohithpranav/Cust-piz/issues"
+  },
+  "homepage": "https://github.com/mohithpranav/Cust-piz#readme",
+  "dependencies": {
+    "express": "^4.21.2",
+    "prisma": "^6.5.0"
+  }
+}
