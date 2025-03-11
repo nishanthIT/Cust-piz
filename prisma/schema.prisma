@@ -1,0 +1,131 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String   @id @default(cuid())
+  name          String
+  email         String   @unique
+  password      String
+  phone         String   @unique
+  address       String
+  orders        Order[]
+  points        Decimal?  @default(0)
+  created_at    DateTime @default(now())
+}
+
+model Admin {
+  id            String   @id @default(cuid())
+  name          String
+  email         String   @unique
+  password      String
+  phone         String   @unique
+  created_at    DateTime @default(now())
+}
+
+model Pizza {
+  id            String   @id @default(cuid())
+  name          String
+  description   String
+  price         Int
+  imageUrl      String
+  category      String  
+  sizes         PizzaSize @default(SMALL)
+  DefaultToppings DefaultToppings[]
+  DefaultIngredients DefaultIngredients[]
+  created_at    DateTime @default(now())
+  OrderItems    OrderItem[]
+}
+
+model Order {
+  id            String   @id @default(cuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id])
+  status        OrderStatus    @default(PENDING)
+  totalAmount   Decimal
+  OrderItems    OrderItem[]
+  cratedAt      DateTime @default(now())
+}
+
+model OrderItem {
+  id            String   @id @default(cuid())
+  orderId       String
+  order         Order    @relation(fields: [orderId], references: [id])
+  quantity      Int      //no.of pizzas
+  size          String
+  price         Decimal   
+  topping       Toppings[]   //user access
+  ingredient    Ingredients[]  //user access
+  pizzaId       String
+  pizza         Pizza    @relation(fields: [pizzaId], references: [id])
+
+}
+
+model Toppings {
+  id            String   @id @default(cuid())
+  name          String
+  price         Decimal
+  status        Boolean  //admin access
+  include       Boolean  //user access
+  quantity      Int
+  oderItemId    String
+  oderItem    OrderItem @relation(fields: [oderItemId], references: [id])
+}
+
+
+model Ingredients {
+  id                     String   @id @default(cuid())
+  name                   String
+  price                  Decimal
+  status                 Boolean   //admin access
+  include                Boolean   //user access
+  quantity               Int
+  orderItemId            String
+  orderItem              OrderItem @relation(fields: [orderItemId], references: [id])
+}
+
+model DefaultToppings {
+  id            String   @id @default(cuid())
+  name          String
+  price         Decimal
+  quantity      Int
+  include       Boolean
+  pizzaId       String   //123
+  pizza         Pizza    @relation(fields: [pizzaId], references: [id])
+}
+
+model DefaultIngredients {
+  id            String @id  @default(cuid())
+  name          String
+  price         Decimal
+  quantity      Int
+  include       Boolean
+  pizzaId       String
+  pizza         Pizza    @relation(fields: [pizzaId], references: [id])
+
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  DELIVERED
+  CANCELLED
+}
+
+enum PizzaSize {
+  SMALL
+  MEDIUM
+  LARGE
+}
+
