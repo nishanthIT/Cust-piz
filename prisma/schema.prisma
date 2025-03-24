@@ -31,21 +31,22 @@ model Admin {
   email         String   @unique
   password      String
   phone         String   @unique
-  created_at    DateTime @default(now())
+  createdAt     DateTime @default(now())
 }
 
 model Pizza {
   id            String   @id @default(cuid())
   name          String
   description   String
-  price         Int
+  price         Decimal
   imageUrl      String
-  category      String  
   sizes         PizzaSize @default(SMALL)
-  DefaultToppings DefaultToppings[]
-  DefaultIngredients DefaultIngredients[]
-  created_at    DateTime @default(now())
-  OrderItems    OrderItem[]
+  categoryId    String
+  category      Category @relation(fields: [categoryId], references: [id] )  
+  defaultToppings DefaultToppings[] 
+  defaultIngredients DefaultIngredients[]  
+  createdAt    DateTime @default(now())
+  orderItems    OrderItem[]
 }
 
 model Order {
@@ -54,25 +55,25 @@ model Order {
   user          User     @relation(fields: [userId], references: [id])
   status        OrderStatus    @default(PENDING)
   totalAmount   Decimal
-  OrderItems    OrderItem[]
-  cratedAt      DateTime @default(now())
+  orderItems    OrderItem[]
+  createdAt     DateTime @default(now())
 }
 
 model OrderItem {
-  id            String   @id @default(cuid())
-  orderId       String
-  order         Order    @relation(fields: [orderId], references: [id])
-  quantity      Int      //no.of pizzas
-  size          String
-  price         Decimal   
-  topping       Toppings[]   //user access
-  ingredient    Ingredients[]  //user access
-  pizzaId       String
-  pizza         Pizza    @relation(fields: [pizzaId], references: [id])
+  id                  String   @id @default(cuid())
+  orderId             String
+  order               Order    @relation(fields: [orderId], references: [id])
+  quantity            Int      //no.of pizzas
+  size                String
+  price               Decimal   
+  orderToppings       OrderToppings[]   //user access
+  orderIngredients    OrderIngredients[]  //user access
+  pizzaId             String
+  pizza               Pizza    @relation(fields: [pizzaId], references: [id])
 
 }
 
-model Toppings {
+model OrderToppings  {
   id            String   @id @default(cuid())
   name          String
   price         Decimal
@@ -80,11 +81,11 @@ model Toppings {
   include       Boolean  //user access
   quantity      Int
   oderItemId    String
-  oderItem    OrderItem @relation(fields: [oderItemId], references: [id])
+  oderItem      OrderItem @relation(fields: [oderItemId], references: [id])
 }
 
 
-model Ingredients {
+model OrderIngredients  {
   id                     String   @id @default(cuid())
   name                   String
   price                  Decimal
@@ -101,8 +102,10 @@ model DefaultToppings {
   price         Decimal
   quantity      Int
   include       Boolean
-  pizzaId       String   //123
-  pizza         Pizza    @relation(fields: [pizzaId], references: [id])
+  pizzaId       String   
+  pizza         Pizza    @relation(fields: [pizzaId], references: [id], onDelete: Cascade)
+  toppingId     String   // added now
+  topping   ToppingsList @relation(fields: [toppingId], references: [id]) // added now
 }
 
 model DefaultIngredients {
@@ -112,9 +115,33 @@ model DefaultIngredients {
   quantity      Int
   include       Boolean
   pizzaId       String
-  pizza         Pizza    @relation(fields: [pizzaId], references: [id])
-
+  pizza         Pizza    @relation(fields: [pizzaId], references: [id], onDelete: Cascade)
+  ingredientId  String //added now
+  ingredient    IngredientsList @relation(fields: [ingredientId], references: [id]) //added now
 }
+
+model ToppingsList {
+  id            String   @id @default(cuid())
+  name          String
+  price         Decimal
+  status        Boolean  @default(true)
+  defaultToppings DefaultToppings[] //added now
+}
+
+model IngredientsList {
+  id            String   @id @default(cuid())
+  name          String
+  price         Decimal
+  status        Boolean  @default(true)
+  defaultIngredients DefaultIngredients[] //added now
+}
+
+model Category {
+  id            String   @id @default(cuid())
+  name          String
+  pizzas        Pizza[]  
+}
+
 
 enum OrderStatus {
   PENDING
