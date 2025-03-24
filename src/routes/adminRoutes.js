@@ -23,6 +23,11 @@ import {
   getAllPizzas,
   updatePizza,
 } from "../adminController/pizzaController.js";
+import {
+  addComboOffer,
+  deleteComboOffer,
+  getComboOffer,
+} from "../adminController/comboOffers.js";
 
 const router = express.Router();
 
@@ -49,5 +54,10 @@ router.post("/addPizza/:id", addPizza);
 router.put("/updatePizza/:adminId/:pizzaId", updatePizza);
 router.delete("/deletePizza/:adminId/:pizzaId", deletePizza);
 router.get("/getAllPizzas/:adminId", getAllPizzas);
+
+// admin combo
+router.post("/addComboOffer", addComboOffer);
+router.get("/getComboOffer", getComboOffer);
+router.delete("/deleteComboOffer/:comboId", deleteComboOffer);
 
 export default router;

@@ -17,10 +17,9 @@ const addPizza = async (req, res) => {
     const {
       name,
       description,
-      price,
       imageUrl,
       category,
-      size,
+      sizes, // Expecting { SMALL: price, MEDIUM: price, LARGE: price }
       toppings, // Array of objects [{ id: "topping_id", quantity: 2 }, ...]
       ingredients, // Array of objects [{ id: "ingredient_id", quantity: 3 }, ...]
     } = req.body;
@@ -40,10 +39,9 @@ const addPizza = async (req, res) => {
         data: {
           name,
           description,
-          price,
           imageUrl,
           category: { connect: { id: category } },
-          sizes: size,
+          sizes,
         },
       });
 
@@ -103,7 +101,7 @@ const addPizza = async (req, res) => {
 
 const updatePizza = async (req, res) => {
   try {
-    const { pizzaId, adminId } = req.params; // Extract adminId from params
+    const { pizzaId, adminId } = req.params;
 
     // 1️ Check if the Admin exists
     const checkAdmin = await prisma.admin.findUnique({
@@ -117,10 +115,9 @@ const updatePizza = async (req, res) => {
     const {
       name,
       description,
-      price,
       imageUrl,
       category,
-      size,
+      sizes, // Expecting { SMALL: price, MEDIUM: price, LARGE: price }
       toppings, // Array of objects [{ id: "topping_id", quantity: 2 }, ...]
       ingredients, // Array of objects [{ id: "ingredient_id", quantity: 3 }, ...]
     } = req.body;
@@ -133,7 +130,7 @@ const updatePizza = async (req, res) => {
       return res.status(404).json({ error: "Pizza not found" });
     }
 
-    // 2️⃣ If updating category, check if it exists
+    // 2️ If updating category, check if it exists
     if (category) {
       const categoryRecord = await prisma.category.findUnique({
         where: { id: category },
@@ -144,22 +141,21 @@ const updatePizza = async (req, res) => {
       }
     }
 
-    // 3️⃣ Perform all DB operations in a transaction
+    // 3️ Perform all DB operations in a transaction
     const updatedPizza = await prisma.$transaction(async (tx) => {
-      // 4️⃣ Update Pizza Details
+      // 4️ Update Pizza Details
       const pizza = await tx.pizza.update({
         where: { id: pizzaId },
         data: {
           name,
           description,
-          price,
           imageUrl,
           category: category ? { connect: { id: category } } : undefined,
-          sizes: size,
+          sizes,
         },
       });
 
-      // 5️⃣ Update Toppings
+      // 5️ Update Toppings
       if (toppings) {
         // Fetch existing toppings linked to the pizza
         await tx.defaultToppings.deleteMany({ where: { pizzaId } });
@@ -186,7 +182,7 @@ const updatePizza = async (req, res) => {
         await tx.defaultToppings.createMany({ data: newToppings });
       }
 
-      // 6️⃣ Update Ingredients
+      // 6️ Update Ingredients
       if (ingredients) {
         // Remove existing ingredients
         await tx.defaultIngredients.deleteMany({ where: { pizzaId } });
@@ -266,7 +262,7 @@ const getAllPizzas = async (req, res) => {
   try {
     const { adminId } = req.params;
 
-    // ✅ Check if Admin exists
+    //  Check if Admin exists
     const checkAdmin = await prisma.admin.findUnique({
       where: { id: adminId },
     });
@@ -275,7 +271,7 @@ const getAllPizzas = async (req, res) => {
       return res.status(403).json({ error: "Unauthorized: Admin not found" });
     }
 
-    // ✅ Fetch Pizzas with Correct Relations
+    //  Fetch Pizzas with Correct Relations
     const pizzas = await prisma.pizza.findMany({
       include: {
         category: true,
