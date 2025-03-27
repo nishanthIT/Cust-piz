@@ -37,8 +37,8 @@ model Admin {
 model Pizza {
   id            String   @id @default(cuid())
   name          String
-  description   String
-  imageUrl      String
+  description   String?
+  imageUrl      String?
   sizes         Json
   categoryId    String
   category      Category @relation(fields: [categoryId], references: [id] )  
@@ -124,7 +124,7 @@ model DefaultToppings {
   pizzaId       String   
   pizza         Pizza    @relation(fields: [pizzaId], references: [id], onDelete: Cascade)
   toppingId     String   // added now
-  topping   ToppingsList @relation(fields: [toppingId], references: [id]) // added now
+  topping   ToppingsList @relation(fields: [toppingId], references: [id], onDelete: Cascade) // added now
 }
 
 model DefaultIngredients {
@@ -136,7 +136,7 @@ model DefaultIngredients {
   pizzaId       String
   pizza         Pizza    @relation(fields: [pizzaId], references: [id], onDelete: Cascade)
   ingredientId  String //added now
-  ingredient    IngredientsList @relation(fields: [ingredientId], references: [id]) //added now
+  ingredient    IngredientsList @relation(fields: [ingredientId], references: [id], onDelete: Cascade) // added now
 }
 
 model ToppingsList {
@@ -157,6 +157,7 @@ model IngredientsList {
 
 model Category {
   id            String   @id @default(cuid())
+  description   String?
   name          String
   pizzas        Pizza[]  
 }

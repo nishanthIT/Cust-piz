@@ -3,6 +3,7 @@ import {
   addTopping,
   deleteTopping,
   getToppings,
+  updateStatusinTopping,
   updateTopping,
 } from "../adminController/toppings.js";
 import {
@@ -10,6 +11,7 @@ import {
   deleteIngredient,
   getIngredients,
   updateIngredient,
+  updateStatusinIngredient,
 } from "../adminController/ingredients.js";
 import {
   addCategory,
@@ -32,28 +34,30 @@ import {
 const router = express.Router();
 
 // admin topping
-router.post("/addTopping/:id", addTopping);
-router.put("/updateTopping/:id", updateTopping);
-router.delete("/deleteTopping/:id", deleteTopping);
-router.get("/getToppings/:id", getToppings);
+router.post("/addTopping", addTopping);
+router.put("/updateTopping", updateTopping);
+router.put("/updateStatusTopping", updateStatusinTopping);
+router.delete("/deleteTopping", deleteTopping);
+router.get("/getToppings", getToppings);
 
 // admin ingredients
-router.post("/addIngredient/:id", addIngredient);
-router.put("/updateIngredient/:id", updateIngredient);
-router.delete("/deleteIngredient/:id", deleteIngredient);
-router.get("/getIngredients/:id", getIngredients);
+router.post("/addIngredient", addIngredient);
+router.put("/updateIngredient", updateIngredient);
+router.put("/updateStatusIngredient", updateStatusinIngredient);
+router.delete("/deleteIngredient", deleteIngredient);
+router.get("/getIngredients", getIngredients);
 
 // admin category
-router.post("/addCategory/:id", addCategory);
-router.put("/updateCategory/:id", updateCategory);
-router.delete("/deleteCategory/:id", deleteCategory);
-router.get("/getCategories/:id", getCategories);
+router.post("/addCategory", addCategory);
+router.put("/updateCategory", updateCategory);
+router.delete("/deleteCategory", deleteCategory);
+router.get("/getCategories", getCategories);
 
 // admin pizza
-router.post("/addPizza/:id", addPizza);
-router.put("/updatePizza/:adminId/:pizzaId", updatePizza);
-router.delete("/deletePizza/:adminId/:pizzaId", deletePizza);
-router.get("/getAllPizzas/:adminId", getAllPizzas);
+router.post("/addPizza", addPizza);
+router.put("/updatePizza", updatePizza);
+router.delete("/deletePizza", deletePizza);
+router.get("/getAllPizzas", getAllPizzas);
 
 // admin combo
 router.post("/addComboOffer", addComboOffer);

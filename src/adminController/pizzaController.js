@@ -4,16 +4,6 @@ const prisma = new PrismaClient();
 
 const addPizza = async (req, res) => {
   try {
-    const adminId = req.params.id;
-
-    const checkAdmin = await prisma.admin.findUnique({
-      where: { id: adminId },
-    });
-
-    if (!checkAdmin) {
-      return res.status(404).json({ error: "Admin not found" });
-    }
-
     const {
       name,
       description,
@@ -101,18 +91,8 @@ const addPizza = async (req, res) => {
 
 const updatePizza = async (req, res) => {
   try {
-    const { pizzaId, adminId } = req.params;
-
-    // 1️ Check if the Admin exists
-    const checkAdmin = await prisma.admin.findUnique({
-      where: { id: adminId },
-    });
-
-    if (!checkAdmin) {
-      return res.status(403).json({ error: "Unauthorized: Admin not found" });
-    }
-
     const {
+      pizzaId,
       name,
       description,
       imageUrl,
@@ -226,16 +206,7 @@ const updatePizza = async (req, res) => {
 
 const deletePizza = async (req, res) => {
   try {
-    const { adminId, pizzaId } = req.params; // Get adminId and pizzaId from URL
-
-    // 1️⃣ Check if the Admin exists
-    const checkAdmin = await prisma.admin.findUnique({
-      where: { id: adminId },
-    });
-
-    if (!checkAdmin) {
-      return res.status(403).json({ error: "Unauthorized: Admin not found" });
-    }
+    const { pizzaId } = req.body;
 
     // 2️⃣ Check if the Pizza exists
     const existingPizza = await prisma.pizza.findUnique({
@@ -260,23 +231,12 @@ const deletePizza = async (req, res) => {
 
 const getAllPizzas = async (req, res) => {
   try {
-    const { adminId } = req.params;
-
-    //  Check if Admin exists
-    const checkAdmin = await prisma.admin.findUnique({
-      where: { id: adminId },
-    });
-
-    if (!checkAdmin) {
-      return res.status(403).json({ error: "Unauthorized: Admin not found" });
-    }
-
     //  Fetch Pizzas with Correct Relations
     const pizzas = await prisma.pizza.findMany({
       include: {
         category: true,
         defaultToppings: {
-          include: { topping: true }, // Ensure relation name matches schema
+          include: { topping: true },
         },
         defaultIngredients: {
           include: { ingredient: true },

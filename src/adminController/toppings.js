@@ -3,18 +3,7 @@ const prisma = new PrismaClient();
 
 const addTopping = async (req, res) => {
   try {
-    const adminId = req.params.id;
     const { name, price } = req.body;
-
-    const checkAdmin = await prisma.admin.findUnique({
-      where: {
-        id: adminId,
-      },
-    });
-
-    if (!checkAdmin) {
-      return res.status(404).json({ message: "Admin not found" });
-    }
 
     const addTopping = await prisma.toppingsList.create({
       data: {
@@ -32,18 +21,7 @@ const addTopping = async (req, res) => {
 
 const updateTopping = async (req, res) => {
   try {
-    const adminId = req.params.id;
-    const { id, name, price, status } = req.body;
-
-    const checkAdmin = await prisma.admin.findUnique({
-      where: {
-        id: adminId,
-      },
-    });
-
-    if (!checkAdmin) {
-      return res.status(404).json({ message: "Admin not found" });
-    }
+    const { id, name, price } = req.body;
 
     const checkTopping = await prisma.toppingsList.findUnique({
       where: {
@@ -62,7 +40,6 @@ const updateTopping = async (req, res) => {
       data: {
         name: name,
         price: price,
-        status: status,
       },
     });
     return res
@@ -73,20 +50,49 @@ const updateTopping = async (req, res) => {
   }
 };
 
-const deleteTopping = async (req, res) => {
+const updateStatusinTopping = async (req, res) => {
   try {
-    const adminId = req.params.id;
-    const { id } = req.body;
+    const { id, status } = req.body;
 
-    const checkAdmin = await prisma.admin.findUnique({
+    if (!id) {
+      return res.status(400).json({ message: "Topping ID is required" });
+    }
+
+    if (typeof status !== "boolean") {
+      return res
+        .status(400)
+        .json({ message: "Invalid status value. Must be a boolean." });
+    }
+
+    const checkTopping = await prisma.toppingsList.findUnique({
       where: {
-        id: adminId,
+        id: id,
+      },
+    });
+    if (!checkTopping) {
+      return res.status(404).json({ message: "Topping not found" });
+    }
+    const updateStatus = await prisma.toppingsList.update({
+      where: {
+        id: id,
+      },
+      data: {
+        status: status,
       },
     });
 
-    if (!checkAdmin) {
-      return res.status(404).json({ message: "Admin not found" });
-    }
+    return res.status(201).json({
+      message: "Topping status updated successfully",
+      data: updateStatus,
+    });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+};
+
+const deleteTopping = async (req, res) => {
+  try {
+    const { id } = req.body;
 
     const checkTopping = await prisma.toppingsList.findUnique({
       where: {
@@ -113,18 +119,6 @@ const deleteTopping = async (req, res) => {
 
 const getToppings = async (req, res) => {
   try {
-    const adminId = req.params.id;
-
-    const checkAdmin = await prisma.admin.findUnique({
-      where: {
-        id: adminId,
-      },
-    });
-
-    if (!checkAdmin) {
-      return res.status(404).json({ message: "Admin not found" });
-    }
-
     const toppings = await prisma.toppingsList.findMany();
     return res
       .status(200)
@@ -134,4 +128,10 @@ const getToppings = async (req, res) => {
   }
 };
 
-export { addTopping, updateTopping, deleteTopping, getToppings };
+export {
+  addTopping,
+  updateTopping,
+  updateStatusinTopping,
+  deleteTopping,
+  getToppings,
+};
