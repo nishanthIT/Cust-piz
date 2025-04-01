@@ -3,18 +3,7 @@ const prisma = new PrismaClient();
 
 const addIngredient = async (req, res) => {
   try {
-    const adminId = req.params.id;
     const { name, price } = req.body;
-
-    const checkAdmin = await prisma.admin.findUnique({
-      where: {
-        id: adminId,
-      },
-    });
-
-    if (!checkAdmin) {
-      return res.status(404).json({ message: "Admin not found" });
-    }
 
     const addIngredients = await prisma.ingredientsList.create({
       data: {
@@ -32,18 +21,7 @@ const addIngredient = async (req, res) => {
 
 const updateIngredient = async (req, res) => {
   try {
-    const adminId = req.params.id;
-    const { id, name, price, status } = req.body;
-
-    const checkAdmin = await prisma.admin.findUnique({
-      where: {
-        id: adminId,
-      },
-    });
-
-    if (!checkAdmin) {
-      return res.status(404).json({ message: "Admin not found" });
-    }
+    const { id, name, price } = req.body;
 
     const checkIngredient = await prisma.ingredientsList.findUnique({
       where: {
@@ -62,7 +40,6 @@ const updateIngredient = async (req, res) => {
       data: {
         name: name,
         price: price,
-        status: status,
       },
     });
     return res
@@ -73,20 +50,41 @@ const updateIngredient = async (req, res) => {
   }
 };
 
-const deleteIngredient = async (req, res) => {
+const updateStatusinIngredient = async (req, res) => {
   try {
-    const adminId = req.params.id;
-    const { id } = req.body;
+    const { id, status } = req.body;
 
-    const checkAdmin = await prisma.admin.findUnique({
+    const checkIngredient = await prisma.ingredientsList.findUnique({
       where: {
-        id: adminId,
+        id: id,
       },
     });
 
-    if (!checkAdmin) {
-      return res.status(404).json({ message: "Admin not found" });
+    if (!checkIngredient) {
+      return res.status(404).json({ message: "Ingredient not found" });
     }
+
+    const updateStatus = await prisma.ingredientsList.update({
+      where: {
+        id: id,
+      },
+      data: {
+        status: status,
+      },
+    });
+
+    return res.status(201).json({
+      message: "Topping status updated successfully",
+      data: updateStatus,
+    });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+};
+
+const deleteIngredient = async (req, res) => {
+  try {
+    const { id } = req.body;
 
     const checkIngredient = await prisma.ingredientsList.findUnique({
       where: {
@@ -114,18 +112,6 @@ const deleteIngredient = async (req, res) => {
 
 const getIngredients = async (req, res) => {
   try {
-    const adminId = req.params.id;
-
-    const checkAdmin = await prisma.admin.findUnique({
-      where: {
-        id: adminId,
-      },
-    });
-
-    if (!checkAdmin) {
-      return res.status(404).json({ message: "Admin not found" });
-    }
-
     const ingredients = await prisma.ingredientsList.findMany();
     return res
       .status(200)
@@ -135,4 +121,10 @@ const getIngredients = async (req, res) => {
   }
 };
 
-export { addIngredient, updateIngredient, deleteIngredient, getIngredients };
+export {
+  addIngredient,
+  updateIngredient,
+  updateStatusinIngredient,
+  deleteIngredient,
+  getIngredients,
+};

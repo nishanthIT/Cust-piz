@@ -3,22 +3,23 @@ const prisma = new PrismaClient();
 
 const addCategory = async (req, res) => {
   try {
-    const adminId = req.params.id;
-    const { name } = req.body;
+    // const adminId = req.params.id;
+    const { name, description } = req.body;
 
-    const checkAdmin = await prisma.admin.findUnique({
-      where: {
-        id: adminId,
-      },
-    });
+    // const checkAdmin = await prisma.admin.findUnique({
+    //   where: {
+    //     id: adminId,
+    //   },
+    // });
 
-    if (!checkAdmin) {
-      return res.status(404).json({ message: "Admin not found" });
-    }
+    // if (!checkAdmin) {
+    //   return res.status(404).json({ message: "Admin not found" });
+    // }
 
     const addCategory = await prisma.category.create({
       data: {
         name: name,
+        description: description,
       },
     });
     return res
@@ -31,18 +32,7 @@ const addCategory = async (req, res) => {
 
 const updateCategory = async (req, res) => {
   try {
-    const adminId = req.params.id;
-    const { id, name } = req.body;
-
-    const checkAdmin = await prisma.admin.findUnique({
-      where: {
-        id: adminId,
-      },
-    });
-
-    if (!checkAdmin) {
-      return res.status(404).json({ message: "Admin not found" });
-    }
+    const { id, name, description } = req.body;
 
     const checkCategory = await prisma.category.findUnique({
       where: {
@@ -60,6 +50,7 @@ const updateCategory = async (req, res) => {
       },
       data: {
         name: name,
+        description: description,
       },
     });
     return res
@@ -72,18 +63,7 @@ const updateCategory = async (req, res) => {
 
 const deleteCategory = async (req, res) => {
   try {
-    const adminId = req.params.id;
     const { id } = req.body;
-
-    const checkAdmin = await prisma.admin.findUnique({
-      where: {
-        id: adminId,
-      },
-    });
-
-    if (!checkAdmin) {
-      return res.status(404).json({ message: "Admin not found" });
-    }
 
     const checkCategory = await prisma.category.findUnique({
       where: {
@@ -110,18 +90,6 @@ const deleteCategory = async (req, res) => {
 
 const getCategories = async (req, res) => {
   try {
-    const adminId = req.params.id;
-
-    const checkAdmin = await prisma.admin.findUnique({
-      where: {
-        id: adminId,
-      },
-    });
-
-    if (!checkAdmin) {
-      return res.status(404).json({ message: "Admin not found" });
-    }
-
     const categories = await prisma.category.findMany();
     return res
       .status(200)

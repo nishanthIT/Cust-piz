@@ -4,92 +4,76 @@ const prisma = new PrismaClient();
 
 const addPizza = async (req, res) => {
   try {
-    const adminId = req.params.id;
-
-    const checkAdmin = await prisma.admin.findUnique({
-      where: { id: adminId },
-    });
-
-    if (!checkAdmin) {
-      return res.status(404).json({ error: "Admin not found" });
-    }
-
     const {
       name,
       description,
-      price,
       imageUrl,
       category,
-      size,
-      toppings, // Array of objects [{ id: "topping_id", quantity: 2 }, ...]
-      ingredients, // Array of objects [{ id: "ingredient_id", quantity: 3 }, ...]
+      sizes,
+      toppings,
+      ingredients,
     } = req.body;
 
     const categoryRecord = await prisma.category.findUnique({
-      where: { id: category }, // Ensure 'category' is an ID
+      where: { id: category },
     });
 
     if (!categoryRecord) {
       return res.status(404).json({ error: "Category not found" });
     }
 
-    // 🚀 Perform all DB operations in a transaction
     const pizza = await prisma.$transaction(async (tx) => {
-      // 1️ Create Pizza
       const newPizza = await tx.pizza.create({
         data: {
           name,
           description,
-          price,
           imageUrl,
-          category: { connect: { id: category } },
-          sizes: size,
+          categoryId: category, // Directly setting categoryId
+          sizes,
         },
       });
 
-      // 2️ Fetch Toppings from ToppingsList
-      const toppingIds = toppings.map((t) => t.id);
-      const toppingRecords = await tx.toppingsList.findMany({
-        where: { id: { in: toppingIds } },
-      });
+      if (toppings.length) {
+        const toppingRecords = await tx.toppingsList.findMany({
+          where: { id: { in: toppings.map((t) => t.id) } },
+        });
 
-      // 3️ Fetch Ingredients from IngredientsList
-      const ingredientIds = ingredients.map((i) => i.id);
-      const ingredientRecords = await tx.ingredientsList.findMany({
-        where: { id: { in: ingredientIds } },
-      });
+        if (toppingRecords.length !== toppings.length) {
+          throw new Error("Some toppings not found");
+        }
 
-      // 4️ Create DefaultToppings linked to this Pizza
-      const defaultToppings = toppings.map((t) => {
-        const toppingData = toppingRecords.find((top) => top.id === t.id);
-        if (!toppingData) throw new Error(`Topping ID ${t.id} not found`);
+        await tx.defaultToppings.createMany({
+          data: toppings.map((t) => ({
+            name: toppingRecords.find((top) => top.id === t.id).name,
+            price: toppingRecords.find((top) => top.id === t.id).price,
+            quantity: t.quantity,
+            include: true,
+            pizzaId: newPizza.id,
+            toppingId: t.id,
+          })),
+        });
+      }
 
-        return {
-          name: toppingData.name,
-          price: toppingData.price,
-          quantity: t.quantity, // Admin-defined quantity
-          include: true, // Admin decides this
-          pizzaId: newPizza.id,
-          toppingId: toppingData.id,
-        };
-      });
-      await tx.defaultToppings.createMany({ data: defaultToppings });
+      if (ingredients.length) {
+        const ingredientRecords = await tx.ingredientsList.findMany({
+          where: { id: { in: ingredients.map((i) => i.id) } },
+        });
 
-      // 5️ Create DefaultIngredients linked to this Pizza
-      const defaultIngredients = ingredients.map((i) => {
-        const ingredientData = ingredientRecords.find((ing) => ing.id === i.id);
-        if (!ingredientData) throw new Error(`Ingredient ID ${i.id} not found`);
+        if (ingredientRecords.length !== ingredients.length) {
+          throw new Error("Some ingredients not found");
+        }
 
-        return {
-          name: ingredientData.name,
-          price: ingredientData.price,
-          quantity: i.quantity, // Admin-defined quantity
-          include: true,
-          pizzaId: newPizza.id,
-          ingredientId: ingredientData.id,
-        };
-      });
-      await tx.defaultIngredients.createMany({ data: defaultIngredients });
+        await tx.defaultIngredients.createMany({
+          data: ingredients.map((i) => ({
+            name: ingredientRecords.find((ing) => ing.id === i.id).name,
+            price: ingredientRecords.find((ing) => ing.id === i.id).price,
+            quantity: i.quantity,
+            include: true,
+            pizzaId: newPizza.id,
+            ingredientId: i.id,
+          })),
+        });
+      }
 
       return newPizza;
     });
@@ -103,26 +87,15 @@ const addPizza = async (req, res) => {
 
 const updatePizza = async (req, res) => {
   try {
-    const { pizzaId, adminId } = req.params; // Extract adminId from params
-
-    // 1️ Check if the Admin exists
-    const checkAdmin = await prisma.admin.findUnique({
-      where: { id: adminId },
-    });
-
-    if (!checkAdmin) {
-      return res.status(403).json({ error: "Unauthorized: Admin not found" });
-    }
-
     const {
+      pizzaId,
       name,
       description,
-      price,
       imageUrl,
       category,
-      size,
-      toppings, // Array of objects [{ id: "topping_id", quantity: 2 }, ...]
-      ingredients, // Array of objects [{ id: "ingredient_id", quantity: 3 }, ...]
+      sizes,
+      toppings,
+      ingredients,
     } = req.body;
 
     const existingPizza = await prisma.pizza.findUnique({
@@ -133,87 +106,71 @@ const updatePizza = async (req, res) => {
       return res.status(404).json({ error: "Pizza not found" });
     }
 
-    // 2️⃣ If updating category, check if it exists
     if (category) {
       const categoryRecord = await prisma.category.findUnique({
         where: { id: category },
       });
-
       if (!categoryRecord) {
         return res.status(404).json({ error: "Category not found" });
       }
     }
 
-    // 3️⃣ Perform all DB operations in a transaction
     const updatedPizza = await prisma.$transaction(async (tx) => {
-      // 4️⃣ Update Pizza Details
       const pizza = await tx.pizza.update({
         where: { id: pizzaId },
         data: {
           name,
           description,
-          price,
           imageUrl,
-          category: category ? { connect: { id: category } } : undefined,
-          sizes: size,
+          categoryId: category || existingPizza.categoryId,
+          sizes: sizes || existingPizza.sizes,
         },
       });
 
-      // 5️⃣ Update Toppings
       if (toppings) {
-        // Fetch existing toppings linked to the pizza
         await tx.defaultToppings.deleteMany({ where: { pizzaId } });
 
-        const toppingIds = toppings.map((t) => t.id);
         const toppingRecords = await tx.toppingsList.findMany({
-          where: { id: { in: toppingIds } },
+          where: { id: { in: toppings.map((t) => t.id) } },
         });
 
-        const newToppings = toppings.map((t) => {
-          const toppingData = toppingRecords.find((top) => top.id === t.id);
-          if (!toppingData) throw new Error(`Topping ID ${t.id} not found`);
+        if (toppingRecords.length !== toppings.length) {
+          throw new Error("Some toppings not found");
+        }
 
-          return {
-            name: toppingData.name,
-            price: toppingData.price,
+        await tx.defaultToppings.createMany({
+          data: toppings.map((t) => ({
+            name: toppingRecords.find((top) => top.id === t.id).name,
+            price: toppingRecords.find((top) => top.id === t.id).price,
             quantity: t.quantity,
             include: true,
             pizzaId: pizza.id,
-            toppingId: toppingData.id,
-          };
+            toppingId: t.id,
+          })),
         });
-
-        await tx.defaultToppings.createMany({ data: newToppings });
       }
 
-      // 6️⃣ Update Ingredients
       if (ingredients) {
-        // Remove existing ingredients
         await tx.defaultIngredients.deleteMany({ where: { pizzaId } });
 
-        const ingredientIds = ingredients.map((i) => i.id);
         const ingredientRecords = await tx.ingredientsList.findMany({
-          where: { id: { in: ingredientIds } },
+          where: { id: { in: ingredients.map((i) => i.id) } },
         });
 
-        const newIngredients = ingredients.map((i) => {
-          const ingredientData = ingredientRecords.find(
-            (ing) => ing.id === i.id
-          );
-          if (!ingredientData)
-            throw new Error(`Ingredient ID ${i.id} not found`);
+        if (ingredientRecords.length !== ingredients.length) {
+          throw new Error("Some ingredients not found");
+        }
 
-          return {
-            name: ingredientData.name,
-            price: ingredientData.price,
+        await tx.defaultIngredients.createMany({
+          data: ingredients.map((i) => ({
+            name: ingredientRecords.find((ing) => ing.id === i.id).name,
+            price: ingredientRecords.find((ing) => ing.id === i.id).price,
             quantity: i.quantity,
             include: true,
             pizzaId: pizza.id,
-            ingredientId: ingredientData.id,
-          };
+            ingredientId: i.id,
+          })),
         });
-
-        await tx.defaultIngredients.createMany({ data: newIngredients });
       }
 
       return pizza;
@@ -230,18 +187,8 @@ const updatePizza = async (req, res) => {
 
 const deletePizza = async (req, res) => {
   try {
-    const { adminId, pizzaId } = req.params; // Get adminId and pizzaId from URL
+    const { pizzaId } = req.body;
 
-    // 1️⃣ Check if the Admin exists
-    const checkAdmin = await prisma.admin.findUnique({
-      where: { id: adminId },
-    });
-
-    if (!checkAdmin) {
-      return res.status(403).json({ error: "Unauthorized: Admin not found" });
-    }
-
-    // 2️⃣ Check if the Pizza exists
     const existingPizza = await prisma.pizza.findUnique({
       where: { id: pizzaId },
     });
@@ -250,9 +197,10 @@ const deletePizza = async (req, res) => {
       return res.status(404).json({ error: "Pizza not found" });
     }
 
-    // 3️⃣ Delete Pizza (Cascade deletes DefaultToppings & DefaultIngredients)
-    await prisma.pizza.delete({
-      where: { id: pizzaId },
+    await prisma.$transaction(async (tx) => {
+      await tx.defaultToppings.deleteMany({ where: { pizzaId } });
+      await tx.defaultIngredients.deleteMany({ where: { pizzaId } });
+      await tx.pizza.delete({ where: { id: pizzaId } });
     });
 
     return res.status(200).json({ message: "Pizza deleted successfully" });
@@ -264,23 +212,11 @@ const deletePizza = async (req, res) => {
 
 const getAllPizzas = async (req, res) => {
   try {
-    const { adminId } = req.params;
-
-    // ✅ Check if Admin exists
-    const checkAdmin = await prisma.admin.findUnique({
-      where: { id: adminId },
-    });
-
-    if (!checkAdmin) {
-      return res.status(403).json({ error: "Unauthorized: Admin not found" });
-    }
-
-    // ✅ Fetch Pizzas with Correct Relations
     const pizzas = await prisma.pizza.findMany({
       include: {
         category: true,
         defaultToppings: {
-          include: { topping: true }, // Ensure relation name matches schema
+          include: { topping: true },
         },
         defaultIngredients: {
           include: { ingredient: true },
